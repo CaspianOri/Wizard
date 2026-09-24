@@ -1,0 +1,26 @@
+tool:
+  name: wizard-audit
+  version: 0.1.0
+  schema_version: 1
+  default_mode: audit
+  output_format: json
+  max_process_timeout_seconds: 300
+  max_file_size_bytes: 10485760
+  max_source_files: 200
+  correlation_id: null
+
+paths:
+  workspace_root: .
+  output_dir: ./audit-output
+  temp_dir: ./tmp
+
+analysis:
+  strict_mode: true
+  require_source_mapping: true
+  enable_slither: false
+  enable_mythril: false
+  enable_poc_generation: false
+
+logging:
+  level: INFO
+  json: true

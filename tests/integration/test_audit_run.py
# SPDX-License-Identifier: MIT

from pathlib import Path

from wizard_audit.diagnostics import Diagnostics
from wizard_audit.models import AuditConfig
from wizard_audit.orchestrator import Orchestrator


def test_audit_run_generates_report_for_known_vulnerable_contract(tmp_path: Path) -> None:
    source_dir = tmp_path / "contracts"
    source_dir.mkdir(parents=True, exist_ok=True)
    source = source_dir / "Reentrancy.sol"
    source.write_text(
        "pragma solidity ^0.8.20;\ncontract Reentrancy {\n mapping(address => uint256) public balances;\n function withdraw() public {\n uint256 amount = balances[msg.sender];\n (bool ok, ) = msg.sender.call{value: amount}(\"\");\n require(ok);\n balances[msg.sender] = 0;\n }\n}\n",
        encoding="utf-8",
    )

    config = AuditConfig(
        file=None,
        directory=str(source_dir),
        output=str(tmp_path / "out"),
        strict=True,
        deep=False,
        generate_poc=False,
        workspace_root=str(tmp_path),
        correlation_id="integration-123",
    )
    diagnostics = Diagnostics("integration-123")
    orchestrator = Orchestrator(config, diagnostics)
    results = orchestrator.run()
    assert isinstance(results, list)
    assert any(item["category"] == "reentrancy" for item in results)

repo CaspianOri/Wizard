@@ -1,0 +1,28 @@
+tests/unit/test_scorer.py
+# SPDX-License-Identifier: MIT
+
+from wizard_audit.models import Finding
+from wizard_audit.scorer import Scorer
+
+
+def test_scorer_is_deterministic() -> None:
+    finding = Finding(
+        id="test_01",
+        category="reentrancy",
+        title="Reentrancy",
+        contract="Token",
+        function="withdraw",
+        line=42,
+        confidence="low",
+        score=0,
+        description="Example",
+        evidence=[],
+        state_vars=["balance"],
+        sources=["ast"],
+    )
+
+    first = Scorer.score(finding)
+    second = Scorer.score(finding)
+    assert first == second
+    assert first.confidence == "medium"
+    assert first.score >= 4

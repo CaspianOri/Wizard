@@ -1,0 +1,84 @@
+# Wizard Audit Tool
+
+This repository contains a refactored, audit-first Solidity security analysis tool. The default operational mode is evidence-oriented auditing and reporting. Exploit generation is intentionally separated behind an explicit flag and is not enabled by default.
+
+## Goals
+
+- Produce reliable findings with strong evidence and deterministic scoring.
+- Default to audit/report mode instead of raw PoC generation.
+- Reduce false positives by emphasizing source mapping, evidence, and validation.
+- Keep all external tool execution bounded, logged, and sandboxed.
+- Create a safe, testable architecture that can evolve without coupling analysis and exploit generation.
+
+## Default behavior
+
+The default CLI mode is audit-only:
+
+```bash
+python weaponized_poc_generator.py -f path/to/Contract.sol --output out/
+```
+
+This mode only emits:
+
+- findings.json
+- diagnostics.json
+- evidence metadata
+- report summaries
+
+PoC generation is opt-in and must be explicitly enabled:
+
+```bash
+python weaponized_poc_generator.py -f path/to/Contract.sol --generate-poc --output out/
+```
+
+## Architecture
+
+The implementation is divided into clear modules:
+
+- `wizard_audit/config.py`: configuration loading and environment overrides
+- `wizard_audit/diagnostics.py`: structured diagnostics and correlation tracking
+- `wizard_audit/validation.py`: strict path, address, URL, compiler, and input validation
+- `wizard_audit/source_mapper.py`: reliable source mapping and AST-to-source line resolution
+- `wizard_audit/compiler.py`: sandboxed compiler execution and JSON AST loading
+- `wizard_audit/hunter.py`: deterministic finding rules
+- `wizard_audit/scorer.py`: strict confidence scoring with reproducible output
+- `wizard_audit/exporter.py`: report generation and versioned output
+- `wizard_audit/orchestrator.py`: top-level audit orchestration
+- `wizard_audit/cli.py`: CLI interface
+
+## Key design choices
+
+1. Audit-first default
+   The tool does not generate exploit templates unless the operator explicitly requests PoC generation. This reduces accidental unsafe behavior.
+
+2. No broad exception handling
+   All tooling and file operations catch specific exceptions and log context. There are no bare `except Exception` blocks.
+
+3. Deterministic scoring
+   Confidence is based on reproducible rules, not ad hoc heuristics.
+
+4. Source mapping accuracy
+   AST `src` fields are mapped to real source lines using a stable parser. This keeps line numbers and evidence tied to actual source text.
+
+5. Tool isolation
+   External compiler calls run with sanitized environment variables, a limited working directory, optional sandboxing, and strict timeout / resource control.
+
+## Limitations
+
+- This is still a static-analysis-first tool; it is not a full symbolic executor.
+- It does not infer full exploit viability from arbitrary on-chain state.
+- Slither/Mythril integration remains optional and should be treated as additional evidence, not ground truth.
+- Exploit generation is intentionally minimal and requires explicit activation.
+
+## Legal / security disclaimer
+
+This tool is intended for authorized security research, internal security testing, and contract review in environments where the user has explicit permission to analyze the codebase. It must not be used for unauthorized access, exploitation, or malicious activity.
+
+## Development
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+pytest
+```

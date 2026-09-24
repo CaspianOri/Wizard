@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: MIT
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+import time
+import uuid
+from typing import Any
+
+
+class Diagnostics:
+    """Structured diagnostics sink with correlation-aware JSON logging."""
+
+    def __init__(self, correlation_id: str | None = None) -> None:
+        self.correlation_id = correlation_id or str(uuid.uuid4())
+        self.entries: list[dict[str, Any]] = []
+
+    def add(
+        self,
+        level: str,
+        source: str,
+        message: str,
+        *,
+        **extra: Any,
+    ) -> None:
+        entry: dict[str, Any] = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "level": level,
+            "source": source,
+            "message": message,
+            "correlation_id": self.correlation_id,
+        }
+        entry.update(extra)
+        self.entries.append(entry)
+
+        logger = logging.getLogger("wizard_audit")
+        logger.log(logging.getLevelName(level.upper()) if hasattr(logging, level.upper()) else logging.INFO,
+                   json.dumps(entry, sort_keys=True))
+
+    def to_serializable(self) -> list[dict[str, Any]]:
+        return [dict(entry) for entry in self.entries]
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_serializable(), indent=2, sort_keys=True)
+
+    def clear(self) -> None:
+        self.entries.clear()
